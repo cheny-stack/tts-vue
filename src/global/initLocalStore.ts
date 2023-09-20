@@ -16,14 +16,14 @@ export default async function initStore() {
 
   store.set("FormConfig.默认", {
     languageSelect: "zh-CN",
-    voiceSelect: "zh-CN-XiaoxiaoNeural",
+    voiceSelect: "zh-CN-YunyangNeural",
     voiceStyleSelect: "Default",
     role: "",
-    speed: 1.0,
+    speed: 1.3,
     pitch: 1.0,
-    api: 1,
+    api: 2,
   });
-  
+
   if (!store.has("savePath")) {
     store.set("savePath", ipcRenderer.sendSync("getDesktopPath"));
   }
@@ -35,6 +35,12 @@ export default async function initStore() {
   }
   if (!store.has("autoplay")) {
     store.set("autoplay", true);
+  }
+  if (!store.has("shortcutEnable")) {
+    store.set("shortcutEnable", true);
+  }
+  if (!store.has("readAloudShortcut")) {
+    store.set("readAloudShortcut", 'Alt+K');
   }
   if (!store.has("updateNotification")) {
     store.set("updateNotification", true);

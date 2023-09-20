@@ -142,13 +142,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch } from "vue";
-import { optionsConfig as oc } from "./options-config";
-import { getStyleDes, getRoleDes } from "./emoji-config";
+import {ref, watch} from "vue";
+import {optionsConfig as oc} from "./options-config";
+import {getRoleDes, getStyleDes} from "./emoji-config";
 import Loading from "./Loading.vue";
-import { ElMessage, ElMessageBox, arrowMiddleware } from "element-plus";
-import { useTtsStore } from "@/store/store";
-import { storeToRefs } from "pinia";
+import {ElMessage, ElMessageBox} from "element-plus";
+import {useTtsStore} from "@/store/store";
+import {storeToRefs} from "pinia";
+
+const {ipcRenderer ,clipboard } = require('electron');
 
 const ttsStore = useTtsStore();
 const {
@@ -168,6 +170,44 @@ const store = new Store();
 // }
 
 const apiEdge = ref(false);
+
+// 监听来自主进程的全局快捷键事件
+ipcRenderer.on('ipc_switchReadAloudShortcut', () => {
+
+  console.log("ipc_switchReadAloudShortcut");
+  if (config.value.shortcutEnable) {
+    const shortcut = config.value.readAloudShortcut;
+    // 调用 Electron 方法
+    ipcRenderer.send('registerShortcut', shortcut);
+  }
+});
+
+
+// 监听来自主进程的全局快捷键事件
+ipcRenderer.on('global-shortcut-triggered', () => {
+  // 处理新的快捷键操作
+  // 在这里执行您的Vue组件函数或操作
+  console.log("快捷键触发朗读");
+  //读取剪切板内容
+  inputs.value.inputValue = readClipboardContent();
+  //粘贴到输入框
+  startBtn();
+});
+
+
+const readClipboardContent = ()=>{
+  let clipboardText = clipboard.readText();
+  // 处理剪切板文本内容
+  clipboardText = clipboardText
+      .replace(/千/g, "于")
+      .replace(/\n|#/g, "")
+      .replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹]/g, '')
+      .replace(/\[\d+\]/g, "")
+      .replace(/\s/g, ' ');
+  clipboardText = clipboardText.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F1E0}-\u{1F1FF}]/gu, '');
+  console.log('剪切板内容:', clipboardText);
+  return clipboardText;
+}
 
 const apiChange = (res:number) => {
   if (res === 2) {
@@ -299,7 +339,7 @@ const rolePlayListInit = defaultVoice?.VoiceRoleNames.split(",");
 const rolePlayList: any = ref(rolePlayListInit);
 
 const voiceSelectChange = (value: string) => {
-  
+
   const voice = voiceSelectList.value.find(
     (item: any) => item.ShortName == formConfig.value.voiceSelect
   );
@@ -313,6 +353,7 @@ const voiceSelectChange = (value: string) => {
 const configChange = (val: string) => {
   formConfig.value = config.value.formConfigJson[val];
 };
+
 
 const startBtn = () => {
   if (page.value.asideIndex == "1" && inputs.value.inputValue == "") {

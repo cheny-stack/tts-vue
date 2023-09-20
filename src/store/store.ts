@@ -33,6 +33,8 @@ export const useTtsStore = defineStore("ttsStore", {
         savePath: store.get("savePath"),
         audition: store.get("audition"),
         autoplay: store.get("autoplay"),
+        shortcutEnable: store.get("shortcutEnable"),
+        readAloudShortcut: store.get("readAloudShortcut"),
         updateNotification: store.get("updateNotification"),
         titleStyle: store.get("titleStyle"),
         api: store.get("api"),
@@ -95,6 +97,12 @@ export const useTtsStore = defineStore("ttsStore", {
     },
     setAutoPlay() {
       store.set("autoplay", this.config.autoplay);
+    },
+    setReadAloudShortcut() {
+      store.set("readAloudShortcut", this.config.readAloudShortcut);
+    },
+    setShortcutEnable() {
+      store.set("shortcutEnable", this.config.shortcutEnable);
     },
     setSpeechKey() {
       store.set("speechKey", this.config.speechKey);

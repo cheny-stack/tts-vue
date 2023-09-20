@@ -75,12 +75,23 @@
             @change="updateTitleStyle"
           />
         </el-form-item>
-        <el-form-item label="试听文本">
-          <el-input v-model="config.audition" size="small" class="input-path">
-            <template #append>
-              <el-button type="primary" @click="auditionConfig">确认</el-button>
-            </template>
+<!--        <el-form-item label="试听文本">-->
+<!--          <el-input v-model="config.audition" size="small" class="input-path">-->
+<!--            <template #append>-->
+<!--              <el-button type="primary" @click="auditionConfig">确认</el-button>-->
+<!--            </template>-->
+<!--          </el-input>-->
+<!--        </el-form-item>-->
+        <el-form-item label="快捷键，朗读剪切板">
+          <el-input style="width: 60px;" v-model="config.readAloudShortcut" size="small" class="input-path">
           </el-input>
+          <el-switch style="margin-left: 10px"
+              v-model="config.shortcutEnable"
+              active-text="是"
+              inactive-text="否"
+              inline-prompt
+              @change="switchReadAloudShortcut"
+          />
         </el-form-item>
         <el-form-item label="模板编辑">
           <el-table
@@ -218,6 +229,24 @@ const auditionConfig = () => {
 
 const switchChange = () => {
   ttsStore.setAutoPlay();
+  ElMessage({
+    message: "保存成功，请点击“刷新配置”立即应用。。",
+    type: "success",
+    duration: 2000,
+  });
+};
+
+
+const switchReadAloudShortcut = () => {
+  console.log("快捷键修改: ", config.value.shortcutEnable, config.value.readAloudShortcut)
+  ttsStore.setShortcutEnable();
+  if (config.value.shortcutEnable) {
+    const shortcut = config.value.readAloudShortcut;
+    // 调用 Electron 方法
+    ipcRenderer.send('registerShortcut', shortcut);
+  } else {
+    ipcRenderer.send('unregisterShortcut');
+  }
   ElMessage({
     message: "保存成功，请点击“刷新配置”立即应用。。",
     type: "success",

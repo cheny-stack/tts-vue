@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell, ipcMain, dialog } from "electron";
+import { app, BrowserWindow, globalShortcut , shell, ipcMain, dialog } from "electron";
 import { release } from "os";
 import { join } from "path";
 import api from "../utils/api";
@@ -37,7 +37,10 @@ const preload = join(__dirname, "../preload/index.js");
 const url = `http://${process.env["VITE_DEV_SERVER_HOST"]}:${process.env["VITE_DEV_SERVER_PORT"]}`;
 const indexHtml = join(ROOT_PATH.dist, "index.html");
 
+
+
 async function createWindow() {
+
   win = new BrowserWindow({
     width: 900,
     minWidth: 900,
@@ -64,6 +67,7 @@ async function createWindow() {
       contextIsolation: false,
     },
   });
+
   app.commandLine.appendSwitch("disable-features", "OutOfBlinkCors");
   if (app.isPackaged) {
     win.loadFile(indexHtml);
@@ -74,7 +78,13 @@ async function createWindow() {
 
   // Test actively push message to the Electron-Renderer
   win.webContents.on("did-finish-load", () => {
-    win?.webContents.send("main-process-message", new Date().toLocaleString());
+    console.log('The window is finished loading.')
+    setTimeout(function() {
+      // 在这里编写要延迟执行的代码
+      console.log('init readAloudShortcut');
+      win?.webContents.send("ipc_switchReadAloudShortcut");
+    }, 3000);
+
   });
 
   // Make all links open with the browser, not with the application
@@ -84,8 +94,18 @@ async function createWindow() {
   });
 }
 
+
+
 app.whenReady().then(createWindow);
 
+app.on('ready', () => {
+  // 取消注册全局快捷键
+
+});
+app.on('will-quit', () => {
+  // 取消注册全局快捷键
+  globalShortcut.unregisterAll();
+});
 app.on("window-all-closed", () => {
   win = null;
   if (process.platform !== "darwin") app.quit();
@@ -108,6 +128,7 @@ app.on("activate", () => {
   }
 });
 
+
 ipcMain.on("min", (e) => win.minimize());
 ipcMain.on("window-maximize", function () {
   if (win.isFullScreen()) {
@@ -128,13 +149,16 @@ ipcMain.handle("open-win", (event, arg) => {
       preload,
     },
   });
-
   if (app.isPackaged) {
     childWindow.loadFile(indexHtml, { hash: arg });
   } else {
     childWindow.loadURL(`${url}/#${arg}`);
     childWindow.webContents.openDevTools({ mode: "undocked", activate: true });
   }
+  childWindow.webContents.on('did-finish-load', () => {
+    console.log('The window is finished loading.')
+    // 你可以在这里执行你的逻辑，例如发送消息到渲染进程等
+  })
 });
 const ElectronStore = require("electron-store");
 ElectronStore.initRenderer();
@@ -194,4 +218,23 @@ ipcMain.handle("openFolderSelector", async (event) => {
     properties: ["openDirectory"],
   });
   return path;
+});
+
+// 监听来自渲染进程的消息
+ipcMain.on('registerShortcut', (event, arg) => {
+  const newShortcut = arg;
+  console.log("注册快捷键:" + newShortcut);
+  // 注册新的快捷键
+  globalShortcut.register(newShortcut, () => {
+    console.log("触发快捷键:" + newShortcut);
+    win?.webContents.send('global-shortcut-triggered');
+  });
+  // 将结果发送回渲染进程
+  // event.sender.send('electron-method-result', result);
+});
+
+ipcMain.on('unregisterShortcut', (event, arg) => {
+  // 在用户修改快捷键后取消之前的快捷键
+  console.log("注销所有快捷键");
+  globalShortcut.unregisterAll();
 });
